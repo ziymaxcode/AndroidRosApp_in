@@ -54,7 +54,7 @@ fun ManualControlScreen(viewModel: MainViewModel) {
                 val angle = angleInput.toFloatOrNull() ?: 0f
                 viewModel.sendManualMoveCommand(radius, angle)
             },
-            enabled = isConnected
+            enabled =isConnected
         ) {
             Text("Move")
         }

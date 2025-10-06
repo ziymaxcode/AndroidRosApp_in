@@ -41,7 +41,7 @@ class RosRepository {
     }
 
     fun sendCommand(jsonMessage: String) {
-      if (_connectionStatus.value) {
+    if (_connectionStatus.value) {
             webSocket?.send(jsonMessage)
         } else {
             println("Cannot send command, not connected.")

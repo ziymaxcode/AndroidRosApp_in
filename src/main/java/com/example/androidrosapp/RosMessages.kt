@@ -35,3 +35,7 @@ data class RobotFeedback(
     @SerialName("error_vector")
     val errorVector: Float
 )
+@Serializable
+data class StringMessage(
+    val data: String
+)

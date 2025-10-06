@@ -15,7 +15,6 @@ class MainViewModel : ViewModel() {
     val isConnected = rosRepository.connectionStatus
     val robotFeedback = rosRepository.feedbackMessage
 
-    // State to track if automation is running
     private val _isAutomating = MutableStateFlow(false)
     val isAutomating = _isAutomating.asStateFlow()
 
@@ -30,30 +29,31 @@ class MainViewModel : ViewModel() {
     }
 
     fun sendManualMoveCommand(radius: Float, angle: Float) {
+        // This function now contains the new wrapping logic
         val command = PolarMoveCommand(radius = radius, angle = angle)
+        val commandJsonString = Json.encodeToString(command)
+        val stringMessage = StringMessage(data = commandJsonString)
         val rosMessage = RosMessage(
             op = "publish",
             topic = "/polar_move_cmd",
-            type = "my_robot_interfaces/msg/PolarMove",
-            msg = command
+            type = "std_msgs/String",
+            msg = stringMessage
         )
         val jsonMessage = Json.encodeToString(rosMessage)
-          println("DEBUG: Sending JSON: $jsonMessage")
+        println("DEBUG: Sending JSON: $jsonMessage") // Add this line
         rosRepository.sendCommand(jsonMessage)
     }
 
-    // Function to run the automation sequence
-// In MainViewModel.kt
-
+    // --- UPDATED AUTOMATION FUNCTION ---
     fun startAutomation(steps: List<AutomationStep>) {
         if (_isAutomating.value) return
 
         viewModelScope.launch {
             _isAutomating.value = true
             for (step in steps) {
+                // We can reuse the updated sendManualMoveCommand function
+                // as it already contains the correct wrapping logic.
                 sendManualMoveCommand(step.radius.toFloat(), step.angle.toFloat())
-                // UPDATE: Use the delay from the Excel file
-                // Convert seconds to milliseconds by multiplying by 1000
                 delay(step.delaySeconds * 1000L)
             }
             _isAutomating.value = false
