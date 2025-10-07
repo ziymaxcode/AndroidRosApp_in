@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,16 +21,17 @@ fun ManualControlScreen(viewModel: MainViewModel) {
 
     val feedback by viewModel.robotFeedback.collectAsState()
     val isConnected by viewModel.isConnected.collectAsState()
+    //  Observe the error message state
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     val movedRadius = String.format(Locale.US, "%.2f", feedback.movedRadius)
     val movedAngle = String.format(Locale.US, "%.2f", feedback.movedAngle)
     val errorVector = String.format(Locale.US, "%.2f%%", feedback.errorVector)
 
-    // WRAP THE COLUMN IN A SCROLL MODIFIER
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()) // ADD THIS LINE
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -49,12 +51,11 @@ fun ManualControlScreen(viewModel: MainViewModel) {
         )
         Button(
             onClick = {
-                println("DEBUG: Move button was clicked!")
                 val radius = radiusInput.toFloatOrNull() ?: 0f
                 val angle = angleInput.toFloatOrNull() ?: 0f
                 viewModel.sendManualMoveCommand(radius, angle)
             },
-            enabled =isConnected
+            enabled = isConnected
         ) {
             Text("Move")
         }
@@ -73,5 +74,15 @@ fun ManualControlScreen(viewModel: MainViewModel) {
         OutlinedTextField(
             value = errorVector, onValueChange = {}, readOnly = true, label = { Text("Error vector") }
         )
+
+        //  Add a text field at the bottom to display errors
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = "Error: $errorMessage",
+                color = MaterialTheme.colorScheme.error,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
     }
 }

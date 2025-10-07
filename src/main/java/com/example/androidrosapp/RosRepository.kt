@@ -2,12 +2,13 @@ package com.example.androidrosapp
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import okhttp3.*
 import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 
-class RosRepository {
+class RosRepository(private val viewModel: MainViewModel) {
 
     private var webSocket: WebSocket? = null
     private val client: OkHttpClient
@@ -58,14 +59,24 @@ class RosRepository {
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             println("Received message: $text")
-            // NEW: Parse the incoming message
             try {
-                val message = Json.decodeFromString<RosMessage<RobotFeedback>>(text)
+                // 1. Decode the outer message to get the std_msgs/String
+                val message = Json.decodeFromString<RosMessage<StringMessage>>(text)
+
                 if (message.op == "publish" && message.msg != null) {
-                    _feedbackMessage.value = message.msg
+                    // 2. Extract the JSON string from the 'data' field
+                    val feedbackJsonString = message.msg.data
+
+                    // 3. Decode the INNER JSON string to get the RobotFeedback object
+                    val feedbackObject = Json.decodeFromString<RobotFeedback>(feedbackJsonString)
+
+                    // 4. Update the data stream with the final object
+                    _feedbackMessage.value = feedbackObject
                 }
             } catch (e: Exception) {
                 println("Error parsing message: ${e.message}")
+                // NEW: Update the ViewModel with the error message
+                viewModel.setErrorMessage(e.message ?: "Unknown parsing error")
             }
         }
 
@@ -84,11 +95,14 @@ class RosRepository {
 
     // NEW: Helper function to subscribe
     private fun subscribeToFeedback() {
+        // Tell rosbridge we want to subscribe to a 'std_msgs/String'
         val subscriptionMessage = RosMessage<Unit>(
             op = "subscribe",
-            topic = "/robot_feedback" // The feedback topic you get from the ECE team
+            topic = "/robot_feedback",
+            type = "std_msgs/String" // ADD THIS LINE
         )
-        val jsonMessage = Json.encodeToString(subscriptionMessage)
+        val jsonMessage = Json.encodeToString(RosMessage.serializer(Unit.serializer()), subscriptionMessage)
         sendCommand(jsonMessage)
     }
+
 }

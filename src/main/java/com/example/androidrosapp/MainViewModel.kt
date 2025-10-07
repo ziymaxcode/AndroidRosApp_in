@@ -11,9 +11,11 @@ import kotlinx.serialization.json.Json
 
 class MainViewModel : ViewModel() {
 
-    private val rosRepository = RosRepository()
+    private val rosRepository = RosRepository(this)
     val isConnected = rosRepository.connectionStatus
     val robotFeedback = rosRepository.feedbackMessage
+    private val _errorMessage = MutableStateFlow("")
+    val errorMessage = _errorMessage.asStateFlow()
 
     private val _isAutomating = MutableStateFlow(false)
     val isAutomating = _isAutomating.asStateFlow()
@@ -64,4 +66,10 @@ class MainViewModel : ViewModel() {
         super.onCleared()
         disconnect()
     }
+    fun setErrorMessage(message: String) {
+        _errorMessage.value = message
+    }
+
+    // Update how the repository is created
+
 }
